@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NETFORGE — Network Topology Mapper</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Geist+Mono:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0b0d11;--s1:#10131a;--s2:#161a24;--s3:#1e2330;--s4:#282e3e;
+--acc:#3b82f6;--acc2:#60a5fa;--green:#22c55e;--yellow:#eab308;--red:#ef4444;
+--orange:#f97316;--purple:#a855f7;--teal:#14b8a6;--pink:#ec4899;
+--t1:#e2e8f0;--t2:#94a3b8;--t3:#475569;--bdr:rgba(59,130,246,0.12);
+--fd:'Plus Jakarta Sans',sans-serif;--fb:'DM Sans',sans-serif;--fm:'Geist Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t1);font-family:var(--fb);font-size:13px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
+button{cursor:pointer;font-family:var(--fb)}
+input,select,textarea{font-family:var(--fm);background:var(--s1);border:1px solid var(--bdr);color:var(--t1);padding:0.4rem 0.55rem;font-size:0.75rem;border-radius:4px;outline:none;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+
+.app{display:grid;grid-template-rows:44px 1fr;grid-template-columns:240px 1fr 280px;height:100vh}
+
+/* TOPBAR */
+.top{grid-column:1/-1;background:var(--s1);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 0.75rem;gap:0.65rem}
+.logo{font-family:var(--fd);font-weight:800;font-size:0.9rem;letter-spacing:0.03em;color:var(--acc);display:flex;align-items:center;gap:0.4rem}
+.logo svg{width:18px;height:18px}
+.logo span{color:var(--t2);font-weight:400}
+.sep{width:1px;height:18px;background:var(--bdr)}
+.tb{padding:0.28rem 0.6rem;font-size:0.65rem;font-weight:600;letter-spacing:0.03em;border:1px solid var(--bdr);border-radius:4px;background:transparent;color:var(--t2);transition:all 0.15s}
+.tb:hover{border-color:var(--acc);color:var(--acc);background:rgba(59,130,246,0.06)}
+.tb.pri{background:var(--acc);color:#fff;border-color:var(--acc)}.tb.pri:hover{background:#4b8df7}
+.tb.red{border-color:rgba(239,68,68,0.25);color:var(--red)}.tb.red:hover{background:rgba(239,68,68,0.08)}
+.tbg{display:flex;gap:0.25rem}.tb-info{margin-left:auto;font-family:var(--fm);font-size:0.6rem;color:var(--t3);display:flex;gap:1rem}
+
+/* SIDEBAR */
+.side{background:var(--s1);border-right:1px solid var(--bdr);overflow-y:auto}
+.ss{padding:0.65rem;border-bottom:1px solid rgba(59,130,246,0.06)}
+.ss-t{font-family:var(--fd);font-size:0.55rem;font-weight:700;letter-spacing:0.14em;color:var(--t3);text-transform:uppercase;margin-bottom:0.5rem}
+.dev-list{display:flex;flex-direction:column;gap:0.25rem}
+.dev-item{display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0.5rem;background:var(--s2);border:1px solid rgba(59,130,246,0.06);border-radius:4px;cursor:grab;transition:all 0.15s;user-select:none}
+.dev-item:hover{border-color:var(--acc);background:var(--s3);transform:translateX(2px)}
+.dev-item:active{cursor:grabbing}
+.di-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;border:1px solid rgba(255,255,255,0.05)}
+.di-name{font-size:0.7rem;font-weight:600}.di-type{font-size:0.5rem;color:var(--t3)}
+
+/* Category colors */
+.cat-net .di-icon{background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.2)}
+.cat-srv .di-icon{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2)}
+.cat-sec .di-icon{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.2)}
+.cat-end .di-icon{background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.2)}
+.cat-cld .di-icon{background:rgba(59,130,246,0.08);border-color:rgba(96,165,250,0.2)}
+.cat-lab .di-icon{background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.2)}
+
+/* VLAN list */
+.vlan-row{display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.4rem;background:var(--s2);border-radius:3px;margin-bottom:0.2rem;font-size:0.65rem}
+.vlan-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.vlan-name{flex:1;font-weight:500}.vlan-id{font-family:var(--fm);color:var(--t3);font-size:0.55rem}
+.vlan-del{background:none;border:none;color:var(--t3);font-size:0.6rem;padding:0.1rem 0.3rem;border-radius:2px;transition:color 0.15s}
+.vlan-del:hover{color:var(--red)}
+.add-vlan{display:flex;gap:0.3rem;margin-top:0.4rem}
+.add-vlan input{flex:1;font-size:0.65rem;padding:0.3rem 0.4rem}
+.add-vlan button{font-size:0.6rem;padding:0.3rem 0.5rem}
+
+/* CANVAS */
+.canvas-area{position:relative;overflow:hidden;background:var(--bg);cursor:crosshair}
+#topoCanvas{position:absolute;top:0;left:0}
+#devContainer{position:absolute;top:0;left:0;width:100%;height:100%}
+
+/* Device nodes on canvas */
+.topo-dev{position:absolute;text-align:center;cursor:move;user-select:none;z-index:10;transition:filter 0.15s}
+.topo-dev:hover{z-index:20;filter:brightness(1.1)}
+.topo-dev.selected{z-index:25}
+.td-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 0.25rem;border:2px solid;transition:border-color 0.2s,box-shadow 0.2s;position:relative}
+.topo-dev.selected .td-icon{box-shadow:0 0 0 3px rgba(59,130,246,0.3)}
+.td-label{font-size:0.6rem;font-weight:600;color:var(--t1);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto}
+.td-sub{font-family:var(--fm);font-size:0.5rem;color:var(--t3)}
+.td-status{position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--s2)}
+.td-port{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--s3);border:1.5px solid var(--t3);cursor:crosshair;z-index:15;transition:all 0.15s}
+.td-port:hover{transform:scale(1.5);background:var(--acc);border-color:var(--acc)}
+.td-port.p-t{top:-4px;left:50%;margin-left:-4px}
+.td-port.p-b{bottom:-4px;left:50%;margin-left:-4px}
+.td-port.p-l{left:-4px;top:50%;margin-top:-4px}
+.td-port.p-r{right:-4px;top:50%;margin-top:-4px}
+
+/* PROPS PANEL */
+.props{background:var(--s1);border-left:1px solid var(--bdr);overflow-y:auto}
+.ps{padding:0.65rem;border-bottom:1px solid rgba(59,130,246,0.06)}
+.ps-t{font-family:var(--fd);font-size:0.55rem;font-weight:700;letter-spacing:0.14em;color:var(--t3);text-transform:uppercase;margin-bottom:0.5rem}
+.pf{margin-bottom:0.5rem}
+.pf label{display:block;font-size:0.6rem;font-weight:500;color:var(--t3);margin-bottom:0.2rem;letter-spacing:0.03em}
+.pf input,.pf select,.pf textarea{width:100%}
+.pf textarea{min-height:50px;resize:vertical;font-size:0.65rem;line-height:1.5}
+.p-empty{text-align:center;padding:2.5rem 1rem;color:var(--t3);font-size:0.7rem}
+.conn-row{display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.4rem;background:var(--s2);border-radius:3px;margin-bottom:0.2rem;font-size:0.6rem}
+.conn-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.conn-del{margin-left:auto;background:none;border:none;color:var(--t3);font-size:0.55rem;cursor:pointer;padding:0.1rem 0.25rem}
+.conn-del:hover{color:var(--red)}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.35rem}
+.stat-c{background:var(--s2);border-radius:4px;padding:0.45rem;text-align:center}
+.stat-v{font-family:var(--fd);font-size:1rem;font-weight:700}.stat-l{font-size:0.45rem;color:var(--t3);letter-spacing:0.1em;text-transform:uppercase;margin-top:0.1rem}
+
+/* Zoom */
+.zoom-c{position:absolute;bottom:0.75rem;right:0.75rem;display:flex;gap:0.2rem;z-index:50}
+.zb{width:28px;height:28px;border-radius:5px;background:var(--s1);border:1px solid var(--bdr);color:var(--t2);font-size:0.8rem;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s}
+.zb:hover{border-color:var(--acc);color:var(--acc)}
+.zl{font-family:var(--fm);font-size:0.55rem;color:var(--t3);display:flex;align-items:center;padding:0 0.4rem}
+
+/* Legend */
+.legend{position:absolute;top:0.75rem;left:0.75rem;background:var(--s1);border:1px solid var(--bdr);border-radius:6px;padding:0.5rem 0.65rem;z-index:50;font-size:0.55rem}
+.legend-title{font-weight:700;color:var(--t3);margin-bottom:0.3rem;letter-spacing:0.08em;font-size:0.5rem;text-transform:uppercase}
+.legend-row{display:flex;align-items:center;gap:0.4rem;padding:0.12rem 0}
+.legend-line{width:18px;height:2px;border-radius:1px}
+
+/* Export modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--bdr);border-radius:8px;width:90vw;max-width:700px;max-height:80vh;overflow:hidden}
+.modal-h{padding:0.65rem 0.85rem;border-bottom:1px solid var(--bdr);display:flex;justify-content:space-between;align-items:center}
+.modal-h h3{font-family:var(--fd);font-size:0.7rem;letter-spacing:0.1em;color:var(--acc)}
+.modal-x{background:none;border:1px solid var(--bdr);color:var(--t3);width:26px;height:26px;border-radius:4px;font-size:0.75rem;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.modal-x:hover{color:var(--red);border-color:var(--red)}
+.modal-b{padding:0.85rem;overflow-y:auto;max-height:calc(80vh - 48px)}
+.modal-b pre{background:var(--bg);border:1px solid var(--bdr);border-radius:5px;padding:0.85rem;font-family:var(--fm);font-size:0.6rem;line-height:1.6;color:var(--t2);overflow-x:auto;white-space:pre-wrap}
+.ex-tabs{display:flex;gap:0.2rem;margin-bottom:0.6rem}
+.ex-tab{padding:0.25rem 0.65rem;font-size:0.6rem;font-weight:600;border:1px solid var(--bdr);border-radius:4px;background:transparent;color:var(--t3);cursor:pointer;transition:all 0.15s}
+.ex-tab.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+@media(max-width:900px){.app{grid-template-columns:1fr}.side,.props{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>NETFORGE<span>&nbsp;Topology</span></div>
+    <div class="sep"></div>
+    <div class="tbg">
+      <button class="tb" onclick="undo()">↩ Undo</button>
+      <button class="tb" onclick="redo()">↪ Redo</button>
+    </div>
+    <div class="sep"></div>
+    <div class="tbg">
+      <button class="tb" onclick="autoArrange()">Auto Arrange</button>
+      <button class="tb pri" onclick="openExport()">Export</button>
+    </div>
+    <div class="sep"></div>
+    <div class="tbg">
+      <button class="tb" onclick="saveMap()">Save</button>
+      <button class="tb" onclick="loadMap()">Load</button>
+      <button class="tb" onclick="loadDemo()">Demo Map</button>
+      <button class="tb red" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="tb-info"><span id="devCount">Devices: 0</span><span id="linkCount">Links: 0</span></div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="side">
+    <div class="ss">
+      <div class="ss-t">Network Devices</div>
+      <div class="dev-list">
+        <div class="dev-item cat-sec" draggable="true" data-type="firewall"><div class="di-icon">🛡️</div><div><div class="di-name">Firewall</div><div class="di-type">Security appliance</div></div></div>
+        <div class="dev-item cat-net" draggable="true" data-type="router"><div class="di-icon">🔀</div><div><div class="di-name">Router</div><div class="di-type">Layer 3 routing</div></div></div>
+        <div class="dev-item cat-net" draggable="true" data-type="switch"><div class="di-icon">🔲</div><div><div class="di-name">Switch</div><div class="di-type">Layer 2 switching</div></div></div>
+        <div class="dev-item cat-net" draggable="true" data-type="ap"><div class="di-icon">📡</div><div><div class="di-name">Access Point</div><div class="di-type">Wireless access</div></div></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Servers & Services</div>
+      <div class="dev-list">
+        <div class="dev-item cat-srv" draggable="true" data-type="server"><div class="di-icon">🖥️</div><div><div class="di-name">Server</div><div class="di-type">Physical / VM host</div></div></div>
+        <div class="dev-item cat-srv" draggable="true" data-type="database"><div class="di-icon">🗄️</div><div><div class="di-name">Database</div><div class="di-type">SQL / NoSQL store</div></div></div>
+        <div class="dev-item cat-srv" draggable="true" data-type="dns"><div class="di-icon">🌐</div><div><div class="di-name">DNS Server</div><div class="di-type">Name resolution</div></div></div>
+        <div class="dev-item cat-srv" draggable="true" data-type="dc"><div class="di-icon">🏛️</div><div><div class="di-name">Domain Controller</div><div class="di-type">AD / Entra ID</div></div></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Endpoints</div>
+      <div class="dev-list">
+        <div class="dev-item cat-end" draggable="true" data-type="workstation"><div class="di-icon">💻</div><div><div class="di-name">Workstation</div><div class="di-type">Desktop / Laptop</div></div></div>
+        <div class="dev-item cat-end" draggable="true" data-type="phone"><div class="di-icon">📱</div><div><div class="di-name">Mobile Device</div><div class="di-type">Phone / Tablet</div></div></div>
+        <div class="dev-item cat-end" draggable="true" data-type="printer"><div class="di-icon">🖨️</div><div><div class="di-name">Printer</div><div class="di-type">Network printer</div></div></div>
+        <div class="dev-item cat-end" draggable="true" data-type="iot"><div class="di-icon">📷</div><div><div class="di-name">IoT Device</div><div class="di-type">Camera / Sensor</div></div></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Cloud & Tunnel</div>
+      <div class="dev-list">
+        <div class="dev-item cat-cld" draggable="true" data-type="cloud"><div class="di-icon">☁️</div><div><div class="di-name">Cloud Service</div><div class="di-type">Azure / AWS / GCP</div></div></div>
+        <div class="dev-item cat-cld" draggable="true" data-type="vpn"><div class="di-icon">🔒</div><div><div class="di-name">VPN Gateway</div><div class="di-type">Site-to-site / Remote</div></div></div>
+        <div class="dev-item cat-cld" draggable="true" data-type="tunnel"><div class="di-icon">🚇</div><div><div class="di-name">CF Tunnel</div><div class="di-type">Cloudflare Tunnel</div></div></div>
+        <div class="dev-item cat-cld" draggable="true" data-type="cdn"><div class="di-icon">⚡</div><div><div class="di-name">CDN / Proxy</div><div class="di-type">Cloudflare / Nginx</div></div></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">Home Lab</div>
+      <div class="dev-list">
+        <div class="dev-item cat-lab" draggable="true" data-type="proxmox"><div class="di-icon">🧊</div><div><div class="di-name">Proxmox Host</div><div class="di-type">Hypervisor node</div></div></div>
+        <div class="dev-item cat-lab" draggable="true" data-type="pihole"><div class="di-icon">🕳️</div><div><div class="di-name">Pi-hole</div><div class="di-type">DNS sinkhole</div></div></div>
+        <div class="dev-item cat-lab" draggable="true" data-type="docker"><div class="di-icon">🐳</div><div><div class="di-name">Docker Host</div><div class="di-type">Container runtime</div></div></div>
+        <div class="dev-item cat-lab" draggable="true" data-type="nas"><div class="di-icon">💽</div><div><div class="di-name">NAS</div><div class="di-type">Network storage</div></div></div>
+      </div>
+    </div>
+    <div class="ss">
+      <div class="ss-t">VLANs / Subnets</div>
+      <div id="vlanList"></div>
+      <div class="add-vlan">
+        <input id="vlanName" placeholder="Name" style="width:45%">
+        <input id="vlanId" placeholder="ID" type="number" style="width:25%">
+        <button class="tb" onclick="addVlan()" style="font-size:0.55rem;padding:0.25rem 0.4rem">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvasArea">
+    <canvas id="topoCanvas"></canvas>
+    <div id="devContainer"></div>
+    <div class="legend" id="legend">
+      <div class="legend-title">Link Types</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--acc)"></div> Ethernet</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--green)"></div> Trunk</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--orange);border-top:2px dashed var(--orange);height:0;background:none"></div> Wireless</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--purple)"></div> VPN / Tunnel</div>
+      <div class="legend-row"><div class="legend-line" style="background:var(--t3);border-top:2px dashed var(--t3);height:0;background:none"></div> Logical</div>
+    </div>
+    <div class="zoom-c">
+      <button class="zb" onclick="zIn()">+</button>
+      <div class="zl" id="zoomLbl">100%</div>
+      <button class="zb" onclick="zOut()">−</button>
+      <button class="zb" onclick="zReset()" style="font-size:0.55rem">⊡</button>
+    </div>
+  </div>
+
+  <!-- PROPS -->
+  <div class="props">
+    <div class="ps">
+      <div class="ps-t">Device Properties</div>
+      <div id="propsContent"><div class="p-empty">Select a device to edit</div></div>
+    </div>
+    <div class="ps">
+      <div class="ps-t">Connections</div>
+      <div id="connList"><div style="font-size:0.6rem;color:var(--t3)">No connections yet</div></div>
+    </div>
+    <div class="ps">
+      <div class="ps-t">Topology Stats</div>
+      <div class="stat-grid">
+        <div class="stat-c"><div class="stat-v" style="color:var(--acc)" id="sDevs">0</div><div class="stat-l">Devices</div></div>
+        <div class="stat-c"><div class="stat-v" style="color:var(--green)" id="sLinks">0</div><div class="stat-l">Links</div></div>
+        <div class="stat-c"><div class="stat-v" style="color:var(--yellow)" id="sVlans">0</div><div class="stat-l">VLANs</div></div>
+        <div class="stat-c"><div class="stat-v" style="color:var(--purple)" id="sSubnets">0</div><div class="stat-l">Subnets</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-bg" id="exportModal">
+  <div class="modal">
+    <div class="modal-h"><h3>EXPORT TOPOLOGY</h3><button class="modal-x" onclick="closeExport()">✕</button></div>
+    <div class="modal-b">
+      <div class="ex-tabs">
+        <button class="ex-tab on" onclick="doExport('json',this)">JSON</button>
+        <button class="ex-tab" onclick="doExport('markdown',this)">Markdown</button>
+        <button class="ex-tab" onclick="doExport('mermaid',this)">Mermaid</button>
+        <button class="ex-tab" onclick="doExport('csv',this)">CSV</button>
+      </div>
+      <pre id="exportContent"></pre>
+      <div style="margin-top:0.6rem;display:flex;gap:0.4rem">
+        <button class="tb pri" onclick="copyExp()">Copy</button>
+        <button class="tb" onclick="dlExp()">Download</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let devices=[],links=[],vlans=[],selDev=null,nid=1,zoom=1,panX=0,panY=0;
+let isPan=false,psx=0,psy=0,isDrag=false,dragDev=null,dox=0,doy=0;
+let isConn=false,connFrom=null,connPort=null,cmx=0,cmy=0;
+let undoStack=[],redoStack=[],curExp='json';
+
+const CA=document.getElementById('canvasArea'),CV=document.getElementById('topoCanvas'),CX=CV.getContext('2d'),DC=document.getElementById('devContainer');
+
+const COLORS={firewall:'#ef4444',router:'#3b82f6',switch:'#3b82f6',ap:'#8b5cf6',server:'#22c55e',database:'#22c55e',dns:'#22c55e',dc:'#22c55e',workstation:'#a855f7',phone:'#a855f7',printer:'#a855f7',iot:'#a855f7',cloud:'#60a5fa',vpn:'#60a5fa',tunnel:'#60a5fa',cdn:'#60a5fa',proxmox:'#f97316',pihole:'#f97316',docker:'#f97316',nas:'#f97316'};
+const ICONS={firewall:'🛡️',router:'🔀',switch:'🔲',ap:'📡',server:'🖥️',database:'🗄️',dns:'🌐',dc:'🏛️',workstation:'💻',phone:'📱',printer:'🖨️',iot:'📷',cloud:'☁️',vpn:'🔒',tunnel:'🚇',cdn:'⚡',proxmox:'🧊',pihole:'🕳️',docker:'🐳',nas:'💽'};
+const NAMES={firewall:'Firewall',router:'Router',switch:'Switch',ap:'Access Point',server:'Server',database:'Database',dns:'DNS Server',dc:'Domain Controller',workstation:'Workstation',phone:'Mobile',printer:'Printer',iot:'IoT Device',cloud:'Cloud',vpn:'VPN',tunnel:'CF Tunnel',cdn:'CDN/Proxy',proxmox:'Proxmox',pihole:'Pi-hole',docker:'Docker',nas:'NAS'};
+
+const VLAN_COLORS=['#3b82f6','#22c55e','#eab308','#ef4444','#a855f7','#f97316','#ec4899','#14b8a6','#6366f1','#84cc16'];
+vlans=[{name:'Management',id:1,cidr:'10.0.1.0/24',color:VLAN_COLORS[0]},{name:'Servers',id:10,cidr:'10.0.10.0/24',color:VLAN_COLORS[1]},{name:'Users',id:20,cidr:'10.0.20.0/24',color:VLAN_COLORS[2]},{name:'IoT',id:30,cidr:'10.0.30.0/24',color:VLAN_COLORS[3]},{name:'DMZ',id:50,cidr:'10.0.50.0/24',color:VLAN_COLORS[4]}];
+
+function resize(){const r=CA.getBoundingClientRect();CV.width=r.width*2;CV.height=r.height*2;CV.style.width=r.width+'px';CV.style.height=r.height+'px';CX.setTransform(2,0,0,2,0,0);draw()}
+window.addEventListener('resize',resize);setTimeout(resize,50);
+
+function draw(){
+  const r=CA.getBoundingClientRect();CX.clearRect(0,0,r.width,r.height);
+  CX.save();CX.translate(panX,panY);CX.scale(zoom,zoom);
+  // Grid
+  const gs=40,sx=Math.floor(-panX/zoom/gs)*gs-gs,sy=Math.floor(-panY/zoom/gs)*gs-gs;
+  CX.fillStyle='rgba(59,130,246,0.025)';
+  for(let x=sx;x<sx+r.width/zoom+gs*2;x+=gs)for(let y=sy;y<sy+r.height/zoom+gs*2;y+=gs)CX.fillRect(x,y,1,1);
+
+  // Draw links
+  const LINK_COLORS={ethernet:'#3b82f6',trunk:'#22c55e',wireless:'#f97316',vpn:'#a855f7',logical:'#475569'};
+  links.forEach(l=>{
+    const a=devices.find(d=>d.id===l.from),b=devices.find(d=>d.id===l.to);
+    if(!a||!b)return;
+    const ax=a.x+24,ay=a.y+24,bx=b.x+24,by=b.y+24;
+    CX.beginPath();CX.moveTo(ax,ay);
+    const mx=(ax+bx)/2,my=(ay+by)/2;
+    CX.lineTo(bx,by);
+    CX.strokeStyle=LINK_COLORS[l.type]||'#3b82f6';
+    CX.lineWidth=2;CX.globalAlpha=0.5;
+    if(l.type==='wireless'||l.type==='logical'){CX.setLineDash([6,4])}else{CX.setLineDash([])}
+    CX.stroke();CX.setLineDash([]);CX.globalAlpha=1;
+    // Bandwidth label
+    if(l.bandwidth){
+      CX.font='500 9px "Geist Mono"';CX.fillStyle='rgba(148,163,184,0.6)';CX.textAlign='center';
+      CX.fillText(l.bandwidth,mx,my-6);
+    }
+  });
+
+  // Active connection
+  if(isConn&&connFrom){
+    const a=connFrom;
+    CX.beginPath();CX.moveTo(a.x+24,a.y+24);CX.lineTo((cmx-panX)/zoom,(cmy-panY)/zoom);
+    CX.strokeStyle='rgba(59,130,246,0.4)';CX.lineWidth=2;CX.setLineDash([6,4]);CX.stroke();CX.setLineDash([]);
+  }
+  CX.restore();
+}
+
+function addDevice(type,x,y){
+  saveU();
+  const d={id:nid++,type,name:NAMES[type]+' '+(devices.filter(v=>v.type===type).length+1),ip:'',vlan:'',subnet:'',notes:'',status:'online',x:x||200+Math.random()*300,y:y||100+Math.random()*200,os:'',mac:'',services:''};
+  devices.push(d);renderDev(d);updateStats();return d;
+}
+
+function renderDev(d){
+  let el=document.getElementById(`dev-${d.id}`);
+  if(el)el.remove();
+  el=document.createElement('div');el.className=`topo-dev ${selDev===d.id?'selected':''}`;el.id=`dev-${d.id}`;
+  el.style.left=(d.x*zoom+panX)+'px';el.style.top=(d.y*zoom+panY)+'px';
+  el.style.transform=`scale(${zoom})`;el.style.transformOrigin='top left';
+  const col=COLORS[d.type]||'#3b82f6';
+  const statusCol=d.status==='online'?'#22c55e':d.status==='offline'?'#ef4444':'#eab308';
+  el.innerHTML=`
+    <div class="td-icon" style="background:${col}12;border-color:${col}40">${ICONS[d.type]}<div class="td-status" style="background:${statusCol}"></div></div>
+    <div class="td-label">${d.name}</div>
+    <div class="td-sub">${d.ip||d.type}</div>
+    <div class="td-port p-t" data-id="${d.id}" data-p="t"></div>
+    <div class="td-port p-b" data-id="${d.id}" data-p="b"></div>
+    <div class="td-port p-l" data-id="${d.id}" data-p="l"></div>
+    <div class="td-port p-r" data-id="${d.id}" data-p="r"></div>
+  `;
+  el.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('td-port'))return;
+    e.stopPropagation();selectDev(d.id);
+    isDrag=true;dragDev=d;const rc=CA.getBoundingClientRect();dox=e.clientX-rc.left-d.x*zoom-panX;doy=e.clientY-rc.top-d.y*zoom-panY;
+  });
+  el.querySelectorAll('.td-port').forEach(p=>{
+    p.addEventListener('mousedown',e=>{e.stopPropagation();isConn=true;connFrom=d;connPort=p.dataset.p});
+    p.addEventListener('mouseup',e=>{
+      e.stopPropagation();
+      if(isConn&&connFrom&&connFrom.id!==d.id){
+        const exists=links.some(l=>(l.from===connFrom.id&&l.to===d.id)||(l.from===d.id&&l.to===connFrom.id));
+        if(!exists){saveU();links.push({from:connFrom.id,to:d.id,type:'ethernet',bandwidth:'1Gbps',notes:''});updateStats();updateConns()}
+      }
+      isConn=false;connFrom=null;draw();
+    });
+  });
+  DC.appendChild(el);
+}
+
+function renderAll(){DC.innerHTML='';devices.forEach(d=>renderDev(d));draw()}
+
+function selectDev(id){selDev=id;document.querySelectorAll('.topo-dev').forEach(e=>e.classList.remove('selected'));
+  const el=document.getElementById(`dev-${id}`);if(el)el.classList.add('selected');showProps(id);updateConns()}
+
+function deleteDev(id){saveU();devices=devices.filter(d=>d.id!==id);links=links.filter(l=>l.from!==id&&l.to!==id);
+  document.getElementById(`dev-${id}`)?.remove();if(selDev===id){selDev=null;showProps(null)}updateStats();updateConns();draw()}
+
+function showProps(id){
+  const el=document.getElementById('propsContent');
+  if(!id){el.innerHTML='<div class="p-empty">Select a device to edit</div>';return}
+  const d=devices.find(v=>v.id===id);if(!d)return;
+  const vOpts=vlans.map(v=>`<option value="${v.name}" ${d.vlan===v.name?'selected':''}>${v.name} (VLAN ${v.id})</option>`).join('');
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">
+      <span style="font-size:1.3rem">${ICONS[d.type]}</span>
+      <div><div style="font-weight:700;font-size:0.8rem">${d.name}</div><div style="font-size:0.55rem;color:var(--t3)">${d.type} · ID: ${d.id}</div></div>
+    </div>
+    <div class="pf"><label>Hostname</label><input value="${d.name}" onchange="updDev(${id},'name',this.value)"></div>
+    <div class="pf"><label>IP Address</label><input value="${d.ip}" placeholder="10.0.1.1" onchange="updDev(${id},'ip',this.value)"></div>
+    <div class="pf"><label>MAC Address</label><input value="${d.mac||''}" placeholder="AA:BB:CC:DD:EE:FF" onchange="updDev(${id},'mac',this.value)"></div>
+    <div class="pf"><label>VLAN</label><select onchange="updDev(${id},'vlan',this.value)"><option value="">— None —</option>${vOpts}</select></div>
+    <div class="pf"><label>Subnet</label><input value="${d.subnet||''}" placeholder="10.0.1.0/24" onchange="updDev(${id},'subnet',this.value)"></div>
+    <div class="pf"><label>OS / Firmware</label><input value="${d.os||''}" placeholder="Ubuntu 24.04" onchange="updDev(${id},'os',this.value)"></div>
+    <div class="pf"><label>Services / Ports</label><input value="${d.services||''}" placeholder="SSH:22, HTTP:80, HTTPS:443" onchange="updDev(${id},'services',this.value)"></div>
+    <div class="pf"><label>Status</label><select onchange="updDev(${id},'status',this.value)"><option value="online" ${d.status==='online'?'selected':''}>Online</option><option value="offline" ${d.status==='offline'?'selected':''}>Offline</option><option value="warning" ${d.status==='warning'?'selected':''}>Warning</option></select></div>
+    <div class="pf"><label>Notes</label><textarea onchange="updDev(${id},'notes',this.value)">${d.notes||''}</textarea></div>
+    <button class="tb red" style="width:100%;margin-top:0.3rem" onclick="deleteDev(${id})">Delete Device</button>
+  `;
+}
+
+function updDev(id,k,v){const d=devices.find(x=>x.id===id);if(d){d[k]=v;renderDev(d);selectDev(id)}}
+
+function updateConns(){
+  const el=document.getElementById('connList');
+  const devLinks=selDev?links.filter(l=>l.from===selDev||l.to===selDev):links;
+  if(!devLinks.length){el.innerHTML='<div style="font-size:0.6rem;color:var(--t3)">No connections</div>';return}
+  el.innerHTML=devLinks.map((l,i)=>{
+    const a=devices.find(d=>d.id===l.from),b=devices.find(d=>d.id===l.to);
+    const LCOL={ethernet:'var(--acc)',trunk:'var(--green)',wireless:'var(--orange)',vpn:'var(--purple)',logical:'var(--t3)'};
+    return `<div class="conn-row">
+      <div class="dot" style="background:${LCOL[l.type]}"></div>
+      <span style="flex:1">${a?.name||'?'} ↔ ${b?.name||'?'}</span>
+      <select style="width:70px;font-size:0.5rem;padding:0.15rem" onchange="updLink(${l.from},${l.to},'type',this.value)">
+        ${['ethernet','trunk','wireless','vpn','logical'].map(t=>`<option value="${t}" ${l.type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <button class="conn-del" onclick="delLink(${l.from},${l.to})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function updLink(from,to,k,v){const l=links.find(x=>x.from===from&&x.to===to);if(l){l[k]=v;draw();updateConns()}}
+function delLink(from,to){saveU();links=links.filter(l=>!(l.from===from&&l.to===to));updateStats();updateConns();draw()}
+
+// VLANS
+function renderVlans(){
+  const el=document.getElementById('vlanList');
+  el.innerHTML=vlans.map((v,i)=>`<div class="vlan-row"><div class="vlan-dot" style="background:${v.color}"></div><span class="vlan-name">${v.name}</span><span class="vlan-id">ID:${v.id} ${v.cidr||''}</span><button class="vlan-del" onclick="delVlan(${i})">✕</button></div>`).join('');
+  document.getElementById('sVlans').textContent=vlans.length;
+  document.getElementById('sSubnets').textContent=vlans.filter(v=>v.cidr).length;
+}
+function addVlan(){
+  const name=document.getElementById('vlanName').value.trim(),id=parseInt(document.getElementById('vlanId').value);
+  if(!name||isNaN(id))return;
+  vlans.push({name,id,cidr:`10.0.${id}.0/24`,color:VLAN_COLORS[vlans.length%VLAN_COLORS.length]});
+  document.getElementById('vlanName').value='';document.getElementById('vlanId').value='';renderVlans();
+}
+function delVlan(i){vlans.splice(i,1);renderVlans()}
+
+// DRAG & DROP
+document.querySelectorAll('.dev-item').forEach(item=>{item.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',item.dataset.type)})});
+CA.addEventListener('dragover',e=>{e.preventDefault()});
+CA.addEventListener('drop',e=>{e.preventDefault();const type=e.dataTransfer.getData('text/plain');if(!type||!NAMES[type])return;const rc=CA.getBoundingClientRect();const x=(e.clientX-rc.left-panX)/zoom,y=(e.clientY-rc.top-panY)/zoom;const d=addDevice(type,x,y);selectDev(d.id)});
+
+// CANVAS MOUSE
+CA.addEventListener('mousedown',e=>{if(e.target===CA||e.target===CV){isPan=true;psx=e.clientX-panX;psy=e.clientY-panY;CA.style.cursor='grabbing';if(selDev){selDev=null;showProps(null);document.querySelectorAll('.topo-dev').forEach(el=>el.classList.remove('selected'))}}});
+window.addEventListener('mousemove',e=>{
+  if(isPan){panX=e.clientX-psx;panY=e.clientY-psy;renderAll()}
+  if(isDrag&&dragDev){const rc=CA.getBoundingClientRect();dragDev.x=(e.clientX-rc.left-dox-panX)/zoom;dragDev.y=(e.clientY-rc.top-doy-panY)/zoom;const el=document.getElementById(`dev-${dragDev.id}`);if(el){el.style.left=(dragDev.x*zoom+panX)+'px';el.style.top=(dragDev.y*zoom+panY)+'px'}draw()}
+  if(isConn){const rc=CA.getBoundingClientRect();cmx=e.clientX-rc.left;cmy=e.clientY-rc.top;draw()}
+});
+window.addEventListener('mouseup',()=>{if(isPan){isPan=false;CA.style.cursor='crosshair'}if(isDrag){isDrag=false;dragDev=null}if(isConn){isConn=false;connFrom=null;draw()}});
+CA.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(0.3,Math.min(2.5,zoom+(e.deltaY>0?-0.05:0.05)));renderAll();updZoom()},{passive:false});
+
+function zIn(){zoom=Math.min(2.5,zoom+0.1);renderAll();updZoom()}
+function zOut(){zoom=Math.max(0.3,zoom-0.1);renderAll();updZoom()}
+function zReset(){zoom=1;panX=0;panY=0;renderAll();updZoom()}
+function updZoom(){document.getElementById('zoomLbl').textContent=Math.round(zoom*100)+'%'}
+
+// UNDO
+function saveU(){undoStack.push(JSON.stringify({devices:devices.map(d=>({...d})),links:[...links.map(l=>({...l}))]}));redoStack=[];if(undoStack.length>40)undoStack.shift()}
+function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify({devices,links}));const s=JSON.parse(undoStack.pop());devices=s.devices;links=s.links;selDev=null;showProps(null);renderAll();updateStats();updateConns()}
+function redo(){if(!redoStack.length)return;undoStack.push(JSON.stringify({devices,links}));const s=JSON.parse(redoStack.pop());devices=s.devices;links=s.links;selDev=null;showProps(null);renderAll();updateStats();updateConns()}
+
+function updateStats(){document.getElementById('devCount').textContent=`Devices: ${devices.length}`;document.getElementById('linkCount').textContent=`Links: ${links.length}`;document.getElementById('sDevs').textContent=devices.length;document.getElementById('sLinks').textContent=links.length}
+
+function autoArrange(){
+  if(!devices.length)return;saveU();
+  // Layer-based layout: security → network → servers → endpoints → cloud
+  const layers={firewall:0,router:1,switch:2,ap:2,dc:3,server:3,database:3,dns:3,proxmox:3,docker:3,pihole:3,nas:3,workstation:4,phone:4,printer:4,iot:4,cloud:5,vpn:5,tunnel:5,cdn:5};
+  const groups={};devices.forEach(d=>{const l=layers[d.type]??3;if(!groups[l])groups[l]=[];groups[l].push(d)});
+  const layerKeys=Object.keys(groups).sort((a,b)=>a-b);
+  const startX=100,gapX=220,gapY=100;
+  layerKeys.forEach((layer,li)=>{const devs=groups[layer];devs.forEach((d,di)=>{d.x=startX+li*gapX;d.y=80+di*gapY})});
+  renderAll();
+}
+
+function clearAll(){if(!devices.length)return;if(!confirm('Clear everything?'))return;saveU();devices=[];links=[];selDev=null;DC.innerHTML='';showProps(null);updateStats();updateConns();draw()}
+function saveMap(){localStorage.setItem('netforge_save',JSON.stringify({devices,links,vlans,nid}));alert('Saved!')}
+function loadMap(){const d=localStorage.getItem('netforge_save');if(!d){alert('No save found');return}const s=JSON.parse(d);devices=s.devices;links=s.links;vlans=s.vlans||vlans;nid=s.nid||devices.length+1;selDev=null;showProps(null);renderAll();renderVlans();updateStats();updateConns()}
+
+// DEMO
+function loadDemo(){
+  saveU();devices=[];links=[];DC.innerHTML='';
+  const fw=addDevice('firewall',400,40);fw.name='PF-EDGE-01';fw.ip='10.0.1.1';fw.vlan='Management';fw.os='pfSense 2.7';fw.services='HTTPS:443, SSH:22';
+  const rt=addDevice('router',400,160);rt.name='RTR-CORE-01';rt.ip='10.0.1.2';rt.vlan='Management';rt.os='VyOS 1.4';
+  const sw1=addDevice('switch',200,280);sw1.name='SW-SRV-01';sw1.ip='10.0.10.2';sw1.vlan='Servers';sw1.os='Cisco IOS 15.2';
+  const sw2=addDevice('switch',600,280);sw2.name='SW-USER-01';sw2.ip='10.0.20.2';sw2.vlan='Users';sw2.os='UniFi Switch';
+  const px=addDevice('proxmox',80,420);px.name='PVE-01';px.ip='10.0.10.10';px.vlan='Servers';px.os='Proxmox VE 8.1';px.services='HTTPS:8006, SSH:22';
+  const dc=addDevice('dc',220,420);dc.name='DC-01';dc.ip='10.0.10.11';dc.vlan='Servers';dc.os='Windows Server 2022';dc.services='LDAP:389, DNS:53, Kerberos:88';
+  const db=addDevice('database',360,420);db.name='DB-01';db.ip='10.0.10.12';db.vlan='Servers';db.os='Ubuntu 24.04';db.services='PostgreSQL:5432';
+  const ph=addDevice('pihole',500,420);ph.name='Pi-hole';ph.ip='10.0.10.13';ph.vlan='Servers';ph.os='Debian 12';ph.services='DNS:53, HTTP:80';
+  const ws1=addDevice('workstation',520,400);ws1.name='WKSTN-01';ws1.ip='10.0.20.101';ws1.vlan='Users';ws1.os='Windows 11';
+  const ws2=addDevice('workstation',660,400);ws2.name='WKSTN-02';ws2.ip='10.0.20.102';ws2.vlan='Users';
+  const ap=addDevice('ap',780,280);ap.name='AP-OFFICE-01';ap.ip='10.0.20.5';ap.vlan='Users';ap.os='UniFi AP';
+  const mob=addDevice('phone',880,400);mob.name='Mobile-01';mob.ip='DHCP';mob.vlan='Users';
+  const cl=addDevice('cloud',400,560);cl.name='Azure Cloud';cl.ip='20.124.182.192';cl.os='Azure B2s VM';cl.services='HTTPS:443, SSH:22';
+  const tn=addDevice('tunnel',600,560);tn.name='CF Tunnel';tn.ip='tunnel.chudmeter.com';tn.os='cloudflared';
+
+  links.push({from:fw.id,to:rt.id,type:'ethernet',bandwidth:'10Gbps'});
+  links.push({from:rt.id,to:sw1.id,type:'trunk',bandwidth:'1Gbps'});
+  links.push({from:rt.id,to:sw2.id,type:'trunk',bandwidth:'1Gbps'});
+  links.push({from:sw1.id,to:px.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw1.id,to:dc.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw1.id,to:db.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw1.id,to:ph.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw2.id,to:ws1.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw2.id,to:ws2.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:sw2.id,to:ap.id,type:'ethernet',bandwidth:'1Gbps'});
+  links.push({from:ap.id,to:mob.id,type:'wireless',bandwidth:'WiFi 6'});
+  links.push({from:fw.id,to:cl.id,type:'vpn',bandwidth:'Site-to-Site'});
+  links.push({from:px.id,to:tn.id,type:'logical',bandwidth:''});
+
+  renderAll();renderVlans();updateStats();updateConns();
+}
+
+// EXPORT
+function openExport(){document.getElementById('exportModal').classList.add('open');doExport('json',document.querySelector('.ex-tab.on'))}
+function closeExport(){document.getElementById('exportModal').classList.remove('open')}
+function doExport(type,btn){curExp=type;document.querySelectorAll('.ex-tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');genExp(type)}
+function genExp(type){
+  const el=document.getElementById('exportContent');
+  if(type==='json'){
+    el.textContent=JSON.stringify({name:'NETFORGE Topology',exported:new Date().toISOString(),devices:devices.map(d=>({id:d.id,type:d.type,name:d.name,ip:d.ip,mac:d.mac,vlan:d.vlan,subnet:d.subnet,os:d.os,services:d.services,status:d.status,notes:d.notes,position:{x:Math.round(d.x),y:Math.round(d.y)}})),links:links.map(l=>({from:devices.find(d=>d.id===l.from)?.name,to:devices.find(d=>d.id===l.to)?.name,type:l.type,bandwidth:l.bandwidth})),vlans:vlans.map(v=>({name:v.name,id:v.id,cidr:v.cidr}))},null,2);
+  } else if(type==='markdown'){
+    let md=`# Network Topology Documentation\n_Generated by NETFORGE — ${new Date().toISOString().split('T')[0]}_\n\n`;
+    md+=`## Overview\n- **Devices:** ${devices.length}\n- **Links:** ${links.length}\n- **VLANs:** ${vlans.length}\n\n`;
+    md+=`## VLANs & Subnets\n| VLAN | ID | Subnet |\n|---|---|---|\n`;
+    vlans.forEach(v=>{md+=`| ${v.name} | ${v.id} | ${v.cidr||'N/A'} |\n`});
+    md+=`\n## Devices\n| Hostname | Type | IP | VLAN | OS | Services | Status |\n|---|---|---|---|---|---|---|\n`;
+    devices.forEach(d=>{md+=`| ${d.name} | ${d.type} | ${d.ip||'N/A'} | ${d.vlan||'N/A'} | ${d.os||'N/A'} | ${d.services||'N/A'} | ${d.status} |\n`});
+    md+=`\n## Connections\n| From | To | Type | Bandwidth |\n|---|---|---|---|\n`;
+    links.forEach(l=>{const a=devices.find(d=>d.id===l.from),b=devices.find(d=>d.id===l.to);md+=`| ${a?.name} | ${b?.name} | ${l.type} | ${l.bandwidth||'N/A'} |\n`});
+    el.textContent=md;
+  } else if(type==='mermaid'){
+    let m='graph TD\n';
+    devices.forEach(d=>{
+      const shape=d.type==='firewall'?`{{"${d.name}"}}`:d.type==='cloud'?`(("${d.name}"))`:d.type==='router'||d.type==='switch'?`[/"${d.name}"\\\\]`:`["${d.name}"]`;
+      m+=`    D${d.id}${shape}\n`;
+    });
+    links.forEach(l=>{
+      const style=l.type==='wireless'?'-.->':(l.type==='vpn'?'===>':'-->');
+      const lbl=l.bandwidth?`|${l.bandwidth}|`:'';
+      m+=`    D${l.from} ${style}${lbl} D${l.to}\n`;
+    });
+    el.textContent=m;
+  } else if(type==='csv'){
+    let csv='Hostname,Type,IP,MAC,VLAN,Subnet,OS,Services,Status,Notes\n';
+    devices.forEach(d=>{csv+=`"${d.name}","${d.type}","${d.ip}","${d.mac||''}","${d.vlan||''}","${d.subnet||''}","${d.os||''}","${d.services||''}","${d.status}","${d.notes||''}"\n`});
+    csv+='\nFrom,To,Link Type,Bandwidth\n';
+    links.forEach(l=>{const a=devices.find(d=>d.id===l.from),b=devices.find(d=>d.id===l.to);csv+=`"${a?.name}","${b?.name}","${l.type}","${l.bandwidth||''}"\n`});
+    el.textContent=csv;
+  }
+}
+function copyExp(){navigator.clipboard?.writeText(document.getElementById('exportContent').textContent).then(()=>alert('Copied!'))}
+function dlExp(){const t=document.getElementById('exportContent').textContent;const ext={json:'json',markdown:'md',mermaid:'mmd',csv:'csv'}[curExp];const b=new Blob([t],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`netforge-topology.${ext}`;a.click()}
+
+// KEYBOARD
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;if((e.key==='Delete'||e.key==='Backspace')&&selDev)deleteDev(selDev);if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo()}if(e.ctrlKey&&e.key==='y'){e.preventDefault();redo()}if(e.key==='Escape')closeExport()});
+
+// INIT
+resize();renderVlans();
+</script>
+</body>
+</html>
