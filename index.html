@@ -500,8 +500,8 @@ function loadDemo(){
   const ws2=addDevice('workstation',660,400);ws2.name='WKSTN-02';ws2.ip='10.0.20.102';ws2.vlan='Users';
   const ap=addDevice('ap',780,280);ap.name='AP-OFFICE-01';ap.ip='10.0.20.5';ap.vlan='Users';ap.os='UniFi AP';
   const mob=addDevice('phone',880,400);mob.name='Mobile-01';mob.ip='DHCP';mob.vlan='Users';
-  const cl=addDevice('cloud',400,560);cl.name='Azure Cloud';cl.ip='20.124.182.192';cl.os='Azure B2s VM';cl.services='HTTPS:443, SSH:22';
-  const tn=addDevice('tunnel',600,560);tn.name='CF Tunnel';tn.ip='tunnel.chudmeter.com';tn.os='cloudflared';
+  const cl=addDevice('cloud',400,560);cl.name='Azure Cloud';cl.ip='203.0.113.10';cl.os='Azure B2s VM';cl.services='HTTPS:443, SSH:22';
+  const tn=addDevice('tunnel',600,560);tn.name='CF Tunnel';tn.ip='tunnel.example.com';tn.os='cloudflared';
 
   links.push({from:fw.id,to:rt.id,type:'ethernet',bandwidth:'10Gbps'});
   links.push({from:rt.id,to:sw1.id,type:'trunk',bandwidth:'1Gbps'});
